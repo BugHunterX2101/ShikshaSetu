@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# Next.js build output
+.next/
+out/
+build/
+dist/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Debug & logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+coverage/
+
+# Subagent / teamwork scratch & state
+.agents/
+word/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment variables
+.env*.local
