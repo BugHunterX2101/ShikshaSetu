@@ -1,5 +1,7 @@
 # ShikshaSetu Fee Tracking System & Parent Portal: Technical Architecture Document
 
+**GitHub Repository**: [https://github.com/BugHunterX2101/ShikshaSetu](https://github.com/BugHunterX2101/ShikshaSetu)
+
 ## 1. Executive Summary and Commercial Context
 
 ### 1.1 System Identity and Scope

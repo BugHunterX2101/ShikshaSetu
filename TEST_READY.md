@@ -1,6 +1,7 @@
 # TEST_READY: ShikshaSetu Automated Test Suite & Coverage Verification
 
 **Project**: ShikshaSetu Fee Tracking System & Parent Portal  
+**GitHub Repository**: [https://github.com/BugHunterX2101/ShikshaSetu](https://github.com/BugHunterX2101/ShikshaSetu)  
 **Anchor System Date**: `2026-11-02`  
 **Location Context**: Company A, Jaipur (4 Centres, 2,600 Students)  
 **Total Test Files**: 31  

@@ -1,6 +1,7 @@
 # Technical Design Document: ShikshaSetu Fee Tracking System and Parent Portal
 
-Nov 9, 2026 · @Vedit Agrawal
+Nov 9, 2026 · @Vedit Agrawal  
+**GitHub Repository**: [https://github.com/BugHunterX2101/ShikshaSetu](https://github.com/BugHunterX2101/ShikshaSetu)
 
 ## 1. Purpose, scope and reading guide
 
@@ -181,6 +182,8 @@ export function configurePg() {
 - A decimal or money library. Integer paise and one `divRound` function cover every calculation in the PRD.
 
 ## 5. Repository and module layout
+
+**Source Code Repository**: [https://github.com/BugHunterX2101/ShikshaSetu](https://github.com/BugHunterX2101/ShikshaSetu)
 
 Business rules sit in pure functions that import nothing from the database or the framework. That is why the 34 domain tests run in milliseconds and can be exact.
 

@@ -1,6 +1,7 @@
 # PRD — Fee Tracking System & Parent Portal (working title: ShikshaSetu)
 
-Nov 9, 2026 · @Vedit Agrawal
+Nov 9, 2026 · @Vedit Agrawal  
+**GitHub Repository**: [https://github.com/BugHunterX2101/ShikshaSetu](https://github.com/BugHunterX2101/ShikshaSetu)
 
 This PRD turns the Option 2 client brief analysis (Company A, Jaipur: 4 centres, 2,600 students) into build-ready requirements after re-checking its arithmetic, laws and technology choices. Its sums and legal dates largely hold; eight points do not and are corrected in section 1. The original client brief was not attached, so its facts are taken as quoted in the analysis.
 
