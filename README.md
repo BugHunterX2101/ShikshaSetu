@@ -126,33 +126,103 @@ The application provides seven purpose-built, responsive interfaces designed for
 
 ## 6. Architecture and Technology Stack
 
-```
-ShikshaSetu System Architecture
+### 6.1 System Topology Architecture
 
-+-----------------------------------------------------------------------+
-|                            Client Tier                                |
-|  - Next.js 15 App Router (React 19, TypeScript, Server Components)    |
-|  - Responsive Mobile Engine (360px minimum viewport compliant)        |
-|  - Tailwind CSS Design System (Bilingual English / Hindi Localization) |
-+-----------------------------------+-----------------------------------+
-                                    |
-+-----------------------------------v-----------------------------------+
-|                        Application Logic Tier                         |
-|  - Pure Domain Model (Isolated statutory business rules)              |
-|  - Statutory Validators (Rajasthan Act 2025, DPDP, Section 269ST)     |
-|  - Integer Arithmetic Engines (Reverse GST split, Pro-rata refund)    |
-|  - Early Warning Risk Evaluator (3-factor composite model)            |
-+-----------------------------------+-----------------------------------+
-                                    |
-+-----------------------------------v-----------------------------------+
-|                           Persistence Tier                            |
-|  - PostgreSQL Schema with Transactional Isolation                     |
-|  - Row-Level Locking on Sequential Receipt Sequences                  |
-|  - Append-Only Financial Ledger & Audit Trail                         |
-+-----------------------------------------------------------------------+
+```mermaid
+flowchart TB
+    subgraph Zone1["Zone 1: Client Presentation Tier"]
+        PARENT["Bilingual Parent Portal\n(360px Mobile PWA / English and Hindi)"]
+        ADMIN["Multi-Centre Accounts Workspace\n(Desktop and Tablet Operations)"]
+        CASHIER["Executive Cashier Terminal\n(Split Payment and Counter Cash)"]
+    end
+
+    subgraph Zone2["Zone 2: Application Routing and Security Tier"]
+        ROUTER["Next.js App Router\n(Server Components and Route Handlers)"]
+        AUTH["Session and RBAC Guard\n(Signed HTTP-Only Session Verification)"]
+        DPDP_GATEWAY["DPDP Consent Engine\n(Rule 10 Adult Verification / Code 5870)"]
+        WEBHOOK["Idempotent Payment Handler\n(HMAC-SHA256 Signature Verification)"]
+    end
+
+    subgraph Zone3["Zone 3: Pure Domain and Statutory Compliance Tier"]
+        STATUTORY["Statutory Rule Engine\n(Rajasthan Act 2025: >= 4 Instalments)"]
+        GST_ENGINE["GST SAC 999293 Engine\n(18% Exact Integer Reverse-Split)"]
+        CASH_GUARD["Section 269ST Validator\n(INR 2,00,000 Hard Limit Ceiling)"]
+        REFUND_CALC["MoE 2024 Refund Calculator\n(Statutory Cases A through F)"]
+        RISK_SCORER["Dropout Risk Engine\n(32 Overdue + 28 Attendance + 19 Test = 79)"]
+    end
+
+    subgraph Zone4["Zone 4: ACID Persistence and Financial Ledger Tier"]
+        PG_POOL["PostgreSQL Connection Pool\n(Explicit Transaction Boundaries)"]
+        RECEIPT_LOCK["Receipt Counter with Row Lock\n(SELECT FOR UPDATE on FY 26-27)"]
+        LEDGER_STORE[("Append-Only Paise Ledger\n(64-bit Integer BigInt Storage)")]
+        AUDIT_TRAIL[("Comprehensive Audit Log\n(Immutable Timestamped Journal)")]
+    end
+
+    PARENT -->|HTTPS / REST / JSON| ROUTER
+    ADMIN -->|HTTPS / REST / JSON| ROUTER
+    CASHIER -->|HTTPS / REST / JSON| ROUTER
+
+    ROUTER --> AUTH
+    AUTH --> DPDP_GATEWAY
+    ROUTER --> WEBHOOK
+
+    ROUTER --> STATUTORY
+    ROUTER --> GST_ENGINE
+    ROUTER --> CASH_GUARD
+    ROUTER --> REFUND_CALC
+    ROUTER --> RISK_SCORER
+
+    WEBHOOK --> PG_POOL
+    STATUTORY --> PG_POOL
+    CASH_GUARD --> PG_POOL
+
+    PG_POOL --> RECEIPT_LOCK
+    PG_POOL --> LEDGER_STORE
+    PG_POOL --> AUDIT_TRAIL
+    RECEIPT_LOCK --> LEDGER_STORE
 ```
 
-### Technology Matrix
+### 6.2 Transaction Execution and Concurrency Lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Gateway as Payment Gateway / Cashier
+    participant Route as API Route Handler (/api/payments/...)
+    participant Domain as Domain Compliance Engine
+    participant DB as PostgreSQL Transaction Boundary
+    participant Counter as Receipt Counters (SELECT FOR UPDATE)
+    participant Ledger as Append-Only Financial Ledger
+    participant Reminder as Reminders and Notifications
+
+    Gateway->>Route: Submit Transaction Request (Amount, Mode, Student ID)
+    activate Route
+
+    Route->>Domain: Validate Statutory Rules (Section 269ST, GST SAC 999293)
+    alt Validation Rejection (e.g. Cash >= INR 2,00,000)
+        Domain-->>Route: Validation Error (HARD_REJECT)
+        Route-->>Gateway: HTTP 422 Unprocessable Entity
+    else Validation Passed
+        Domain-->>Route: Normalized Integer Transaction Spec
+    end
+
+    Route->>DB: BEGIN TRANSACTION (SERIALIZABLE / READ COMMITTED)
+    activate DB
+
+    DB->>Counter: Lock & Increment Counter (SELECT sequence_val FOR UPDATE)
+    Counter-->>DB: Allocated Gapless Number (e.g. RCP/26-27/000412)
+
+    DB->>Ledger: Post Countervailing Ledger Entries (Debit Clearing, Credit Coaching Fee)
+    DB->>Reminder: Atomically Suppress Pending Overdue Reminders (suppressPaymentId)
+
+    DB-->>Route: COMMIT TRANSACTION
+    deactivate DB
+
+    Route-->>Gateway: HTTP 200 OK + Signed Bilingual Receipt Payload
+    deactivate Route
+```
+
+### 6.3 Technology Matrix
 - **Runtime Environment**: Node.js 20+
 - **Application Framework**: Next.js 15 (App Router with React Server Components)
 - **Language**: TypeScript 5.x (Strict type safety, zero `any` declarations in domain boundaries)
@@ -162,47 +232,160 @@ ShikshaSetu System Architecture
 
 ---
 
-## 7. Directory Structure
+## 7. Complete Project File Structure
 
 ```
 ShikshaSetu/
-|-- app/                                    # Next.js 15 App Router Routes
-|   |-- cashier/                            # Cashier collection terminal
-|   |-- consent/                            # DPDP guardian KYC & consent portal
-|   |-- dropout-risk/                       # Early warning dropout counselor desk
-|   |-- ledger/                             # Student fee ledger & schedules
-|   |-- parent/                             # Parent dues & mobile payment screen
-|   |-- reconciliation/                     # Branch cash & bank deposit monitor
-|   |-- refunds/                            # Statutory pro-rata refund terminal
-|   |-- api/                                # REST endpoints for receipts & calculations
-|   |-- layout.tsx                          # Root layout with bilingual navigation
-|   |-- page.tsx                            # Executive dashboard & centre switcher
-|-- components/                             # Reusable, Accessible UI Components
-|   |-- ConsentModal.tsx                    # DPDP adult KYC & consent modal
-|   |-- LanguageSelector.tsx                # English / Hindi dynamic locale toggle
-|   |-- Navigation.tsx                      # Top-level responsive navigation bar
-|   |-- ReceiptPrintView.tsx                # Statutory compliant bilingual receipt layout
-|   |-- StatCard.tsx                        # High-contrast metric cards
-|-- lib/                                    # Pure Domain Business Logic (Zero Framework Coupling)
-|   |-- compliance.ts                       # Rajasthan Act 2025, DPDP, & 269ST rules
-|   |-- db.ts                               # PostgreSQL connection pool & helpers
-|   |-- dropout.ts                          # Deterministic dropout risk calculator
-|   |-- gst.ts                              # Integer reverse-split GST arithmetic
-|   |-- i18n.ts                             # Bilingual translations (EN/HI)
-|   |-- receipt.ts                          # Gapless sequential numbering engine
-|   |-- refund.ts                           # MoE 2024 pro-rata refund adjudication
-|-- tests/                                  # Comprehensive Test Suite (518 Tests, 36 Files)
-|   |-- domain/                             # Unit tests for pure business rules
-|   |-- integration/                        # Multi-component transaction tests
-|   |-- e2e/                                # End-to-end user journey tests (TC-01..TC-23)
-|-- public/                                 # Static assets & localization dictionaries
-|-- PRD — Fee Tracking System & Parent Portal.md
+|-- app/                                        # Next.js App Router Application Root
+|   |-- admin/                                  # Administrative & Operations Subsystem
+|   |   |-- dashboard/page.tsx                  # Executive Branch KPI & Ageing Matrix Dashboard
+|   |   |-- refunds/page.tsx                    # Statutory Pro-Rata Refund Terminal (Cases A-F)
+|   |   |-- reminders/page.tsx                  # Fee Recovery Cadence & Suppression Workbench
+|   |   `-- students/[id]/page.tsx              # Comprehensive Student Ledger & Instalment Schedule
+|   |-- api/                                    # Serverless Route Handlers & REST Endpoints
+|   |   |-- admin/
+|   |   |   |-- dashboard/route.ts              # Branch Multi-Centre KPI & Ageing Buckets API
+|   |   |   |-- refunds/
+|   |   |   |   |-- route.ts                    # Refund Adjudication List & Status Updates
+|   |   |   |   |-- calculate/route.ts          # Statutory Pro-Rata Refund Calculation Engine
+|   |   |   |   |-- risk-queue/route.ts         # Priority Dropout Intervention Queue
+|   |   |   |   |-- [id]/approve/route.ts       # Refund Approval Authorization
+|   |   |   |   `-- [id]/settle/route.ts        # Final Refund Disbursement & Credit Note Issue
+|   |   |   |-- reminders/route.ts              # Reminders Query, Filter & Suppression Endpoint
+|   |   |   |-- students/[id]/route.ts          # Student Profile & Ledger Data Provider
+|   |   |   `-- unmatched/
+|   |   |       |-- route.ts                    # Unmatched Bank Deposits & UPI Clearing Queue
+|   |   |       |-- [id]/reject/route.ts        # Reject Unmatched Deposit with Audit Reason
+|   |   |       `-- [id]/resolve/route.ts       # Manual Student Match & Allocation Settlement
+|   |   |-- auth/
+|   |   |   |-- demo-switch/route.ts            # Fast Reviewer Persona Switcher (Parent/Admin/Cashier)
+|   |   |   |-- otp/request/route.ts            # Mock OTP Generation & Mobile SMS Simulation
+|   |   |   `-- otp/verify/route.ts             # Session Token Issuance & Role Assignment
+|   |   |-- consent/
+|   |   |   |-- route.ts                        # DPDP Rule 10 Guardian KYC & Consent Creation
+|   |   |   `-- withdraw/route.ts               # Immediate Non-Essential Communication Revocation
+|   |   |-- export/tally/route.ts               # Balanced Tally Prime XML Export (Zero Ledger Drift)
+|   |   |-- parent/dues/route.ts                # 5-Second Parent Dues API with DPDP Redaction
+|   |   |-- payments/
+|   |   |   |-- checkout/route.ts               # Digital Gateway Payment Intent & Allocation
+|   |   |   `-- offline/route.ts                # Counter Payment Terminal with Section 269ST Check
+|   |   `-- webhooks/razorpay/route.ts          # Idempotent HMAC-SHA256 Webhook Allocation Handler
+|   |-- login/page.tsx                          # Role-Based Bilingual Login & OTP Verification
+|   |-- parent/
+|   |   |-- dashboard/page.tsx                  # 5-Second Mobile-First Parent Portal (360px Optimized)
+|   |   `-- pay/[id]/page.tsx                   # One-Tap UPI and NetBanking Payment Checkout Screen
+|   |-- globals.css                             # Tailwind CSS Directives & Global Color Tokens
+|   |-- layout.tsx                              # Root Layout with Language & Auth Providers
+|   `-- page.tsx                                # Root Landing & Instant Persona Routing Page
+|-- components/                                 # Reusable UI & Presentation Component Library
+|   |-- admin/                                  # Administrative & Management Workspace Components
+|   |   |-- AgeingBucketsTable.tsx              # Chronological 0-30, 31-60, 61-90, 90+ Day Matrix
+|   |   |-- CounsellorInterventionModal.tsx     # Student Dropout Counselor Outreach Logger
+|   |   |-- DropoutRiskHeroCard.tsx             # STU-0587 Highlight Card (Score: 79/100 HIGH)
+|   |   |-- DropoutRiskTable.tsx                # Prioritized Multi-Factor At-Risk Student Queue
+|   |   |-- ManualMatchModal.tsx                # Bank Transaction Matching & Allocation Tool
+|   |   |-- MoERefundCalculator.tsx             # Interactive Pro-Rata Refund Simulation Component
+|   |   |-- OfflinePaymentModal.tsx             # Cash / DD / Card Ingest Terminal with Cash Ceiling
+|   |   |-- ReceiptProofModal.tsx               # High-Resolution Receipt Print & Export View
+|   |   |-- RefundApprovalQueue.tsx             # Statutory 10-Day Refund Workflow Tracker
+|   |   |-- ReminderPreviewModal.tsx            # WhatsApp / SMS Reminder Preview & Customizer
+|   |   |-- TallyExportModal.tsx                # Tally Prime XML Download & Date Filter Modal
+|   |   `-- UnmatchedQueueTable.tsx             # Unassigned Bank Transfer Reconciler
+|   |-- ConsentModal.tsx                        # DPDP Guardian Adult KYC (Token 5870) Verification
+|   |-- DuesCard.tsx                            # Mobile Dues Component Adhering to 5-Second Rule
+|   |-- LanguageToggle.tsx                      # English / Hindi Dynamic Locale Switcher
+|   |-- Navbar.tsx                              # Responsive Navigation Bar with Role Indicators
+|   |-- ReceiptModal.tsx                        # Statutory Receipt Dialog with Tax Breakdown
+|   |-- ReviewerDemoBar.tsx                     # Top Fixed Reviewer Navigation & State Switcher
+|   `-- Toast.tsx                               # Floating Notification & Status Messenger
+|-- src/                                        # Pure Core Domain, State & Infrastructure Layer
+|   |-- context/                                # React Context Providers
+|   |   |-- AuthContext.tsx                     # User Session State & Multi-Centre Role Management
+|   |   `-- ToastContext.tsx                    # System-Wide Notification Dispatcher
+|   |-- domain/                                 # Isolated Business Logic (Zero Framework Dependencies)
+|   |   |-- aiCircuitBreaker.ts                 # Counselor Script Adapter with Fallback Protection
+|   |   |-- cashLimit.ts                        # Income Tax Act Section 269ST INR 2,00,000 Hard Limit
+|   |   |-- csvUpload.ts                        # Bulk Student & Payment CSV Ingestion Parser
+|   |   |-- dates.ts                            # Anchor Date (2026-11-02) Arithmetic Utilities
+|   |   |-- dpdp.ts                             # DPDP Act Rule 10 Guardian Age & Consent Logic
+|   |   |-- gst.ts                              # GST SAC 999293 Integer Reverse-Split Arithmetic
+|   |   |-- index.ts                            # Domain Package Entry Point & Public Exports
+|   |   |-- instalmentStatus.ts                 # Deterministic Status Classifier (PAID/OVERDUE/PARTIAL)
+|   |   |-- rajasthanAct.ts                     # Rajasthan Coaching Act 2025 >= 4 Instalments Guard
+|   |   |-- receipt.ts                          # Gapless Sequential Numbering Generator (RCP/26-27/...)
+|   |   |-- refund.ts                           # MoE 2024 / Rajasthan 2025 Pro-Rata Refund Engine
+|   |   |-- reminders.ts                        # Cadence Generator & Payment Auto-Suppression Logic
+|   |   |-- riskScore.ts                        # 3-Factor Composite Dropout Predictor (Score = 79)
+|   |   |-- tallyExport.ts                      # Balanced XML Exporter for Tally Prime Accounting
+|   |   |-- unmatched.ts                        # Bank Reconciliation & Unmatched Deposit State Machine
+|   |   `-- webhookSignature.ts                 # Cryptographic HMAC-SHA256 Signature Verification
+|   |-- i18n/                                   # Localization Dictionaries & Translation Context
+|   |   |-- context.tsx                         # Language Context Provider & Translation Hook
+|   |   |-- en.ts                               # English Translation Dictionary
+|   |   |-- hi.ts                               # Hindi Translation Dictionary
+|   |   |-- index.ts                            # Translation Loader & Fallback Manager
+|   |   `-- types.ts                            # Translation Key Type Definitions
+|   |-- lib/                                    # Common Utilities & Server Infrastructure
+|   |   |-- apiResponse.ts                      # Standardized JSON API Response Helper
+|   |   |-- auth.ts                             # Jose JWT Verification & Cookie Session Parser
+|   |   `-- demoMode.ts                         # In-Memory Seed Storage for Reviewer Demonstration
+|   `-- store/                                  # Transactional In-Memory & Database Data Repository
+|       |-- index.ts                            # Store Export & Singleton Repository Instance
+|       |-- repository.ts                       # Concurrency-Safe Store with Explicit Row Locking
+|       |-- seedData.ts                         # Complete Company A Seed (4 Centres, 2,600 Students)
+|       `-- types.ts                            # Complete Data Model Type Definitions
+|-- tests/                                      # Automated Verification & Stress Test Suite (36 Files)
+|   |-- api/                                    # Route Handler & API Endpoint Integration Tests
+|   |   |-- admin_dashboard.test.ts             # Multi-Centre KPI & Ageing Bucket Aggregations
+|   |   |-- adversarial_challenger_2_api.test.ts# Adversarial API Security & Boundary Probes
+|   |   |-- adversarial_m2_challenger_1.test.ts # Concurrency Races & Webhook Integrity
+|   |   |-- auth_and_rbac.test.ts               # Role-Based Access Control & Session Validation
+|   |   |-- checkout_payment.test.ts            # Payment Intent Creation & Allocation Workflow
+|   |   |-- concurrency_receipts.test.ts        # Parallel Checkout Gapless Numbering Guarantees
+|   |   |-- dpdp_consent.test.ts                # Consent Creation & Communication Redaction Tests
+|   |   |-- offline_cash.test.ts                # Counter Cash Ceiling & Split Payment Tests
+|   |   |-- refunds_workflow.test.ts            # 10-Day Statutory Refund Approval & Settlement
+|   |   |-- reminders_lifecycle.test.ts         # Multi-Centre Reminder Queue & Auto-Suppression
+|   |   |-- risk_queue.test.ts                  # Priority At-Risk Student Filtering & Ordering
+|   |   `-- unmatched_reconciliation.test.ts    # Unassigned Payment Resolution & Rejection
+|   |-- domain/                                 # Unit Verification for Pure Business Logic
+|   |   |-- adversarialFinancial.test.ts        # Deep Financial Boundary & Negative Value Invariants
+|   |   |-- adversarial_challenger_2.test.ts    # Comprehensive Fuzz Testing on Statutory Logic
+|   |   |-- cashLimit.test.ts                   # Section 269ST INR 2,00,000 Hard Limit Edge Cases
+|   |   |-- dpdp.test.ts                        # Guardian KYC Token Verification & Opt-Out Rules
+|   |   |-- gst.test.ts                         # Exact Integer Reverse-Split Verification
+|   |   |-- instalmentStatus.test.ts            # Instalment Scheduling & Status Transitions
+|   |   |-- rajasthanAct.test.ts                # Mandatory >= 4 Instalments Validation Tests
+|   |   |-- receipt.test.ts                     # Receipt Formatting & Sequence Continuity Tests
+|   |   |-- refund.test.ts                      # MoE 2024 Pro-Rata Cases A through F Test Harness
+|   |   |-- reminders.test.ts                   # Reminder Cadence Generation & Payment Suppression
+|   |   |-- riskScore.test.ts                   # Rohan Sharma STU-0587 Score Exactness (79/100)
+|   |   |-- tallyExport.test.ts                 # XML Balancing Invariant (Debit === Credit)
+|   |   `-- unmatched.test.ts                   # Bank Transaction Lifecycle & State Transitions
+|   |-- e2e/                                    # Full User Flow & End-to-End Test Scenarios
+|   |   |-- adversarial_m4_challenger_1.test.ts # Extreme Scale Concurrency & Replay Attacks
+|   |   |-- m4_challenger_2_adversarial.test.ts # Webhook Idempotency & Fault Injection Tests
+|   |   |-- m4_challenger_2_boundaries.test.ts  # Viewport Boundary & Form Validation Invariants
+|   |   |-- m4_fix_challenger_empirical.test.ts # Empirical Fix Validation Across User Journeys
+|   |   |-- m4_iter3_challenger_empirical.test.ts# Multi-Branch Stress & State Recovery Tests
+|   |   `-- tc_suite.test.ts                    # Core Test Cases TC-01 through TC-23
+|   `-- ui/                                     # Presentation & Component Verification Tests
+|       |-- adversarial_m3_presentation.test.ts # Adversarial Presentation Edge Cases & Resizing
+|       |-- m3_challenger_1_fix_verification.test.ts# Sequential Checkout Simulation & Receipts
+|       |-- m3_challenger_2_statutory_stress.test.ts# Statutory Form & Modal Stress Invariants
+|       |-- m3_fix_challenger_2_adversarial.test.ts# Ageing Matrix & Tally Export UI Invariants
+|       `-- presentation_layer.test.ts          # Bilingual UI Rendering & Accessibility Tests
+|-- .gitignore                                  # Git Exclusion Rules (Build artifacts & secrets)
+|-- package.json                                # Project Metadata, Scripts & Dependencies
+|-- pnpm-lock.yaml                              # Deterministic Dependency Lockfile
+|-- postcss.config.mjs                          # PostCSS Configuration for Tailwind CSS
+|-- PRD — Fee Tracking System & Parent Portal.md# Comprehensive Product Requirements Document
+|-- README.md                                   # Enterprise Architectural & Operational Documentation
+|-- shikshasetu-technical-architecture.md       # Full Technical Architecture Specification
 |-- Technical Design Document ShikshaSetu Fee Tracking System and Parent Portal.md
-|-- shikshasetu-technical-architecture.md
-|-- TEST_READY.md                           # Formal test execution & audit certification
-|-- package.json
-|-- tsconfig.json
-|-- vitest.config.ts
+|-- TEST_READY.md                               # Automated Test Execution & Certification Report
+|-- tsconfig.json                               # Strict TypeScript Compiler Configuration
+`-- vitest.config.ts                            # Vitest Test Runner Configuration
 ```
 
 ---
